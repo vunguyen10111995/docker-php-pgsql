@@ -1,0 +1,116 @@
+version: '2'
+
+services:
+  application:
+    container_name: _application #container name
+    image: debian
+    volumes:
+      - ./:/var/www/laravel
+  workspace:
+    container_name: _workspace #container name
+    restart: always
+    image: framgia/laravel-workspace
+    volumes_from:
+      - application
+    tty: true
+  php-fpm:
+    container_name: _php-fpm #container name
+    restart: always
+    image: framgia/laravel-php-fpm
+    volumes_from:
+      - application
+    expose:
+      - "9000"
+    links:
+      - workspace
+  nginx:
+    container_name: _nginx #container name
+    restart: always
+    image: framgia/laravel-nginx
+    volumes_from:
+      - data
+      - logs
+      - application
+    ports:
+      - "9000:80"
+    links:
+      - php-fpm
+  data:
+    container_name: _data #container name
+    image: debian
+    volumes:
+      - .docker/mysql:/var/lib/mysql
+      - .docker/data:/data
+  data_test:
+    container_name: _data_test #container name
+    image: debian
+    volumes:
+      - .docker/mysql_test:/var/lib/mysql
+      - .docker/data_test:/data
+  logs:
+    container_name: _logs #container name
+    image: debian
+    volumes:
+      - .docker/logs/nginx:/var/log/nginx
+      - .docker/logs/mongodb:/var/log/mongodb
+  postgres:
+    container_name: _postgres #container name
+    image: viblo/postgres:latest-alpine
+    restart: always
+    volumes_from:
+      - data
+      - logs
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: database_name #database name
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+  postgres_test:
+    container_name: _postgres_test #container name
+    image: viblo/postgres:latest-alpine
+    restart: always
+    volumes_from:
+      - data
+      - logs
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: database_test #database test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+#    mysql:
+#        container_name: _mysql #container name
+#        restart: always
+#        image: mysql:5.7
+#        volumes_from:
+#            - data
+#            - logs
+#        expose:
+#            - "3306"
+#        environment:
+#            MYSQL_DATABASE: database
+#            MYSQL_USER: root
+#            MYSQL_PASSWORD: 1
+#            MYSQL_ROOT_PASSWORD: root
+#    mysql_test:
+#        container_name: _mysql_test #container test name
+#        restart: always
+#        image: mysql:5.7
+#        volumes_from:
+#            - data_test
+#        expose:
+#            - "3306"
+#        environment:
+#            MYSQL_DATABASE: database_test
+#            MYSQL_USER: root
+#            MYSQL_PASSWORD: 1
+#            MYSQL_ROOT_PASSWORD: root
+#    redis:
+#        container_name: _redis #container name
+#        restart: always
+#        image: redis
+#        expose:
+#            - "6379"
+#        volumes_from:
+#            - data
